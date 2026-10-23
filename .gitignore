@@ -1,0 +1,42 @@
+﻿# Build output
+**/bin/
+**/obj/
+**/node_modules/
+**/dist/
+**/coverage/
+TestResults/
+
+# Local environment and secrets
+.env
+.env.*
+!.env.example
+**/appsettings.json
+**/appsettings.Development.json
+**/appsettings.Production.json
+*.pfx
+*.p12
+*.pem
+*.key
+id_rsa
+*.backup
+
+# Local databases and logs
+*.bak
+*.dump
+*.sqlite
+*.db
+*.log
+logs/
+
+# IDE and OS files
+.vs/
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Frontend is deployed separately on Netlify
+/markq-gms-web/
+
+# Temporary backup files
+*.cors-backup

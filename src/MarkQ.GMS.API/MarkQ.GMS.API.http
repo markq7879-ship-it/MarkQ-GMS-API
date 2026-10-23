@@ -1,0 +1,6 @@
+@MarkQ.GMS.API_HostAddress = http://localhost:5299
+
+GET {{MarkQ.GMS.API_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

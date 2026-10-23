@@ -1,0 +1,26 @@
+﻿namespace MarkQ.GMS.Application.Features.Payments;
+
+public record PaymentDto(
+    Guid Id,
+    string ReceiptNumber,
+    Guid MembershipId,
+    string MembershipNumber,
+    Guid MemberId,
+    string MemberCode,
+    string MemberName,
+    string MemberMobile,
+    string? MemberWhatsApp,
+    decimal Amount,
+    string Method,
+    string? Reference,
+    DateTime PaidAt,
+    string Status,
+    string ReceivedByName,
+    DateTime? VoidedAt,
+    string? VoidReason,
+    string? VoidedByName,
+    string? Notes,
+    decimal MembershipTotal,
+    decimal PaidBefore,
+    decimal BalanceBefore,
+    decimal BalanceAfter);

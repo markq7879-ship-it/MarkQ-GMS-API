@@ -1,0 +1,8 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/MarkQ.GMS.API/MarkQ.GMS.API.csproj" />
+    <Project Path="src/MarkQ.GMS.Application/MarkQ.GMS.Application.csproj" />
+    <Project Path="src/MarkQ.GMS.Domain/MarkQ.GMS.Domain.csproj" />
+    <Project Path="src/MarkQ.GMS.Infrastructure/MarkQ.GMS.Infrastructure.csproj" />
+  </Folder>
+</Solution>
