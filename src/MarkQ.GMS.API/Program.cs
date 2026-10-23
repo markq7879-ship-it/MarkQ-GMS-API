@@ -1,4 +1,5 @@
-﻿using System.Text;
+﻿
+using System.Text;
 using MarkQ.GMS.API.Common;
 using MarkQ.GMS.API.Extensions;
 using MarkQ.GMS.API.Middleware;
@@ -6,8 +7,10 @@ using MarkQ.GMS.Application;
 using MarkQ.GMS.Application.Abstractions;
 using MarkQ.GMS.Infrastructure;
 using MarkQ.GMS.Infrastructure.Bootstrap;
+using MarkQ.GMS.Infrastructure.Persistence;
 using MarkQ.GMS.Infrastructure.Security;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
 using Serilog;
@@ -83,6 +86,10 @@ var app = builder.Build();
 
 using (var scope = app.Services.CreateScope())
 {
+    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+
+    await db.Database.MigrateAsync();
+
     var seeder = scope.ServiceProvider.GetRequiredService<DatabaseSeeder>();
     await seeder.SeedAsync();
 }
