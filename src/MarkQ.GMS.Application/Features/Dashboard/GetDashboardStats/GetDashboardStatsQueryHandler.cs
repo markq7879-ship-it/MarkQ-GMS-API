@@ -27,7 +27,7 @@ public class GetDashboardStatsQueryHandler : IRequestHandler<GetDashboardStatsQu
         var monthStart = new DateTime(now.Year, now.Month, 1, 0, 0, 0, DateTimeKind.Utc);
         var dayStart = now.Date;
 
-        var membersQuery = _db.Members.Where(m => m.OrganizationId == me.OrganizationId);
+        var membersQuery = _db.Members.Where(m => m.OrganizationId == me.OrganizationId && m.CancelledAt == null);
         if (!_currentUser.IsOwner)
         {
             var allowed = _currentUser.BranchIds.ToArray();
@@ -118,3 +118,4 @@ public class GetDashboardStatsQueryHandler : IRequestHandler<GetDashboardStatsQu
             now);
     }
 }
+

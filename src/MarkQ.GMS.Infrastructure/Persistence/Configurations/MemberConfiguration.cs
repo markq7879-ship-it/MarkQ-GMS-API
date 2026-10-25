@@ -21,11 +21,9 @@ public class MemberConfiguration : IEntityTypeConfiguration<Member>
         b.Property(x => x.BloodGroup).HasMaxLength(10);
         b.Property(x => x.MaritalStatus).HasMaxLength(20);
         b.Property(x => x.Occupation).HasMaxLength(100);
-
         b.Property(x => x.Address).HasMaxLength(500);
         b.Property(x => x.City).HasMaxLength(100);
         b.Property(x => x.Pincode).HasMaxLength(20);
-
         b.Property(x => x.IdProofType).HasMaxLength(30);
         b.Property(x => x.IdProofNumber).HasMaxLength(50);
         b.Property(x => x.EmergencyContactName).HasMaxLength(200);
@@ -38,8 +36,12 @@ public class MemberConfiguration : IEntityTypeConfiguration<Member>
         b.Property(x => x.PhotoBase64).HasColumnType("text");
         b.Property(x => x.PhotoContentType).HasMaxLength(50);
 
+        b.Property(x => x.CancelReason).HasMaxLength(500);
+        b.Property(x => x.CancelledByName).HasMaxLength(200);
+
         b.HasIndex(x => new { x.OrganizationId, x.MemberCode }).IsUnique();
         b.HasIndex(x => new { x.OrganizationId, x.Mobile });
+        b.HasIndex(x => new { x.OrganizationId, x.CancelledAt });
 
         b.HasOne(x => x.Branch!).WithMany()
             .HasForeignKey(x => x.BranchId).OnDelete(DeleteBehavior.Restrict);

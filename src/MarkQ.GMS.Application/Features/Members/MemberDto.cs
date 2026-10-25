@@ -25,10 +25,14 @@ public record MemberDto(
     string? Notes,
     Guid BranchId,
     string BranchName,
-    string Status,
+    string Status,               // CANCELLED | ACTIVE | EXPIRED | NO_MEMBERSHIP | INACTIVE
     string? PhotoBase64,
     string? PhotoContentType,
-    DateTime CreatedAt);
+    DateTime CreatedAt,
+    // Cancellation info
+    DateTime? CancelledAt,
+    string? CancelReason,
+    string? CancelledByName);
 
 public record MemberListResult(IReadOnlyCollection<MemberDto> Items, int Total);
 

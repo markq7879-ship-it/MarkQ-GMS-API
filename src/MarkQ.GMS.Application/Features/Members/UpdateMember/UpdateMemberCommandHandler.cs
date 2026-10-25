@@ -9,10 +9,14 @@ public class UpdateMemberCommandHandler : IRequestHandler<UpdateMemberCommand, M
 {
     private readonly IAppDbContext _db;
     private readonly ICurrentUserService _currentUser;
+    private readonly IDateTimeProvider _clock;
 
-    public UpdateMemberCommandHandler(IAppDbContext db, ICurrentUserService cu)
+    public UpdateMemberCommandHandler(
+        IAppDbContext db,
+        ICurrentUserService cu,
+        IDateTimeProvider clock)
     {
-        _db = db; _currentUser = cu;
+        _db = db; _currentUser = cu; _clock = clock;
     }
 
     public async Task<MemberDto> Handle(UpdateMemberCommand request, CancellationToken ct)
@@ -72,6 +76,20 @@ public class UpdateMemberCommandHandler : IRequestHandler<UpdateMemberCommand, M
 
         await _db.SaveChangesAsync(ct);
 
+        // Compute status correctly (same logic as GetMember)
+        var today = DateOnly.FromDateTime(_clock.UtcNow);
+        var hasActiveMembership = await _db.Memberships.AnyAsync(x =>
+            x.MemberId == member.Id && x.CancelledAt == null && x.EndDate >= today, ct);
+
+        var hasAnyMembership = await _db.Memberships.AnyAsync(x => x.MemberId == member.Id, ct);
+
+        string status;
+        if (member.CancelledAt.HasValue) status = "CANCELLED";
+        else if (!member.IsActive) status = "INACTIVE";
+        else if (hasActiveMembership) status = "ACTIVE";
+        else if (hasAnyMembership) status = "EXPIRED";
+        else status = "NO_MEMBERSHIP";
+
         return new MemberDto(
             member.Id, member.MemberCode, member.FullName, member.FatherFullName, member.Mobile,
             member.WhatsApp, member.Email, member.DateOfBirth, member.Gender, member.BloodGroup,
@@ -79,9 +97,10 @@ public class UpdateMemberCommandHandler : IRequestHandler<UpdateMemberCommand, M
             member.IdProofType, member.IdProofNumber,
             member.EmergencyContactName, member.EmergencyContactRelation, member.EmergencyContactPhone,
             member.ReferredBy, member.Notes,
-            branch.Id, branch.Name, "NO_MEMBERSHIP",
+            branch.Id, branch.Name, status,
             member.PhotoBase64, member.PhotoContentType,
-            member.CreatedAt);
+            member.CreatedAt,
+            member.CancelledAt, member.CancelReason, member.CancelledByName);
     }
 
     private static string? Clean(string? s) => string.IsNullOrWhiteSpace(s) ? null : s.Trim();

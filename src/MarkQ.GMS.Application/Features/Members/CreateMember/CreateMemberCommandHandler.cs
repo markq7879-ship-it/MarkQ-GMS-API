@@ -30,7 +30,7 @@ public class CreateMemberCommandHandler : IRequestHandler<CreateMemberCommand, M
         if (!_currentUser.IsOwner && !_currentUser.BranchIds.Contains(branch.Id))
             throw new ForbiddenException("You do not have access to this branch.");
 
-        // Duplicate mobile check within the org
+        // Duplicate mobile check
         var normalizedMobile = NormalizeMobile(request.Mobile);
         var existing = await _db.Members
             .Where(m => m.OrganizationId == me.OrganizationId && m.Mobile == normalizedMobile)
@@ -99,14 +99,11 @@ public class CreateMemberCommandHandler : IRequestHandler<CreateMemberCommand, M
             member.ReferredBy, member.Notes,
             branch.Id, branch.Name, "NO_MEMBERSHIP",
             member.PhotoBase64, member.PhotoContentType,
-            member.CreatedAt);
+            member.CreatedAt,
+            null, null, null);   // CancelledAt, CancelReason, CancelledByName
     }
 
     private static string? Clean(string? s) => string.IsNullOrWhiteSpace(s) ? null : s.Trim();
-
-    private static string NormalizeMobile(string mobile)
-    {
-        // Strip whitespace, dashes, parens for consistent storage
-        return new string(mobile.Where(c => char.IsDigit(c) || c == '+').ToArray());
-    }
+    private static string NormalizeMobile(string mobile) =>
+        new string(mobile.Where(c => char.IsDigit(c) || c == '+').ToArray());
 }

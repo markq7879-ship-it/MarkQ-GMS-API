@@ -9,10 +9,11 @@ public class GetMemberQueryHandler : IRequestHandler<GetMemberQuery, MemberDto>
 {
     private readonly IAppDbContext _db;
     private readonly ICurrentUserService _currentUser;
+    private readonly IDateTimeProvider _clock;
 
-    public GetMemberQueryHandler(IAppDbContext db, ICurrentUserService cu)
+    public GetMemberQueryHandler(IAppDbContext db, ICurrentUserService cu, IDateTimeProvider clock)
     {
-        _db = db; _currentUser = cu;
+        _db = db; _currentUser = cu; _clock = clock;
     }
 
     public async Task<MemberDto> Handle(GetMemberQuery request, CancellationToken ct)
@@ -29,6 +30,19 @@ public class GetMemberQueryHandler : IRequestHandler<GetMemberQuery, MemberDto>
         if (!_currentUser.IsOwner && !_currentUser.BranchIds.Contains(m.BranchId))
             throw new ForbiddenException("You do not have access to this member.");
 
+        var today = DateOnly.FromDateTime(_clock.UtcNow);
+        var hasActiveMembership = await _db.Memberships.AnyAsync(x =>
+            x.MemberId == m.Id && x.CancelledAt == null && x.EndDate >= today, ct);
+
+        var hasAnyMembership = await _db.Memberships.AnyAsync(x => x.MemberId == m.Id, ct);
+
+        string status;
+        if (m.CancelledAt.HasValue) status = "CANCELLED";
+        else if (!m.IsActive) status = "INACTIVE";
+        else if (hasActiveMembership) status = "ACTIVE";
+        else if (hasAnyMembership) status = "EXPIRED";
+        else status = "NO_MEMBERSHIP";
+
         return new MemberDto(
             m.Id, m.MemberCode, m.FullName, m.FatherFullName, m.Mobile, m.WhatsApp, m.Email,
             m.DateOfBirth, m.Gender, m.BloodGroup, m.MaritalStatus, m.Occupation,
@@ -36,8 +50,9 @@ public class GetMemberQueryHandler : IRequestHandler<GetMemberQuery, MemberDto>
             m.IdProofType, m.IdProofNumber,
             m.EmergencyContactName, m.EmergencyContactRelation, m.EmergencyContactPhone,
             m.ReferredBy, m.Notes,
-            m.BranchId, m.Branch?.Name ?? "", "NO_MEMBERSHIP",
+            m.BranchId, m.Branch?.Name ?? "", status,
             m.PhotoBase64, m.PhotoContentType,
-            m.CreatedAt);
+            m.CreatedAt,
+            m.CancelledAt, m.CancelReason, m.CancelledByName);
     }
 }

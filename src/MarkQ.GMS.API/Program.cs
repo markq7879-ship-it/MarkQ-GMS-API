@@ -1,4 +1,5 @@
-﻿
+﻿using MarkQ.GMS.API;
+
 using System.Text;
 using MarkQ.GMS.API.Common;
 using MarkQ.GMS.API.Extensions;
@@ -14,6 +15,9 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
 using Serilog;
+using Hangfire;
+using Hangfire.PostgreSql;
+using MarkQ.GMS.Infrastructure.Jobs;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -81,6 +85,16 @@ builder.Services.AddSwaggerGen(c =>
 });
 
 builder.Services.AddAppHealthChecks(builder.Configuration);
+// ---------- Hangfire (background jobs) ----------
+var pgCs = builder.Configuration.GetConnectionString("Postgres")!;
+builder.Services.AddHangfire(cfg => cfg
+    .SetDataCompatibilityLevel(CompatibilityLevel.Version_180)
+    .UseSimpleAssemblyNameTypeSerializer()
+    .UseRecommendedSerializerSettings()
+    .UsePostgreSqlStorage(o => o.UseNpgsqlConnection(pgCs)));
+builder.Services.AddHangfireServer();
+
+
 
 var app = builder.Build();
 
@@ -110,8 +124,29 @@ else
 app.UseCors(DevCors);
 app.UseAuthentication();
 app.UseAuthorization();
+// Hangfire dashboard (protect this in production)
+app.UseHangfireDashboard("/hangfire", new DashboardOptions
+{
+    Authorization = new[] { new AllowAllDashboardAuthorizationFilter() }
+});
+
+// Schedule daily expiry reminder — 9:00 AM IST
+RecurringJob.AddOrUpdate<MembershipExpiryReminderJob>(
+    "membership-expiry-reminder-daily",
+    j => j.RunAsync(CancellationToken.None),
+    "0 9 * * *",
+    new RecurringJobOptions
+    {
+        TimeZone = TimeZoneInfo.FindSystemTimeZoneById(
+            OperatingSystem.IsWindows() ? "India Standard Time" : "Asia/Kolkata")
+    });
+
+
 app.MapControllers();
 app.MapAppHealthChecks();
 
 app.Run();
+
+
+
 

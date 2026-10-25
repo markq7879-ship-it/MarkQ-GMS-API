@@ -81,6 +81,20 @@ namespace MarkQ.GMS.Infrastructure.Persistence.Migrations
                     b.Property<Guid>("BranchId")
                         .HasColumnType("uuid");
 
+                    b.Property<string>("CancelReason")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<DateTime?>("CancelledAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("CancelledByName")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<Guid?>("CancelledByUserId")
+                        .HasColumnType("uuid");
+
                     b.Property<string>("City")
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)");
@@ -188,6 +202,8 @@ namespace MarkQ.GMS.Infrastructure.Persistence.Migrations
 
                     b.HasIndex("BranchId");
 
+                    b.HasIndex("OrganizationId", "CancelledAt");
+
                     b.HasIndex("OrganizationId", "MemberCode")
                         .IsUnique();
 
@@ -231,6 +247,9 @@ namespace MarkQ.GMS.Infrastructure.Persistence.Migrations
                     b.Property<string>("EndDateOverrideReason")
                         .HasMaxLength(500)
                         .HasColumnType("character varying(500)");
+
+                    b.Property<DateTime?>("ExpiryReminderSentAt")
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("FreezeReason")
                         .HasMaxLength(500)

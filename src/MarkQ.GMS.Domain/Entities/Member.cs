@@ -41,4 +41,10 @@ public class Member : BaseEntity
     public string? PhotoContentType { get; set; }
 
     public bool IsActive { get; set; } = true;
+
+    // Cancellation
+    public DateTime? CancelledAt { get; set; }
+    public string? CancelReason { get; set; }
+    public Guid? CancelledByUserId { get; set; }
+    public string? CancelledByName { get; set; }
 }

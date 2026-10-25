@@ -51,28 +51,28 @@ public class GetMembersQueryHandler : IRequestHandler<GetMembersQuery, MemberLis
         switch (filter)
         {
             case "active":
-                query = query.Where(m => _db.Memberships.Any(x =>
+                query = query.Where(m => m.CancelledAt == null && _db.Memberships.Any(x =>
                     x.MemberId == m.Id && x.CancelledAt == null && x.EndDate >= today));
                 break;
 
             case "inactive":
-                query = query.Where(m => !_db.Memberships.Any(x =>
+                query = query.Where(m => m.CancelledAt == null && !_db.Memberships.Any(x =>
                     x.MemberId == m.Id && x.CancelledAt == null && x.EndDate >= today));
                 break;
 
             case "expiring7":
-                query = query.Where(m => _db.Memberships.Any(x =>
+                query = query.Where(m => m.CancelledAt == null && _db.Memberships.Any(x =>
                     x.MemberId == m.Id && x.CancelledAt == null &&
                     x.EndDate > today && x.EndDate <= seven));
                 break;
 
             case "expiringtoday":
-                query = query.Where(m => _db.Memberships.Any(x =>
+                query = query.Where(m => m.CancelledAt == null && _db.Memberships.Any(x =>
                     x.MemberId == m.Id && x.CancelledAt == null && x.EndDate == today));
                 break;
 
             case "newtoday":
-                query = query.Where(m => m.CreatedAt >= dayStart && m.CreatedAt < dayStart.AddDays(1));
+                query = query.Where(m => m.CancelledAt == null && m.CreatedAt >= dayStart && m.CreatedAt < dayStart.AddDays(1));
                 break;
 
             case "pending":
@@ -93,7 +93,16 @@ public class GetMembersQueryHandler : IRequestHandler<GetMembersQuery, MemberLis
                     .Distinct()
                     .ToArray();
 
-                query = query.Where(m => pendingIds.Contains(m.Id));
+                query = query.Where(m => m.CancelledAt == null && pendingIds.Contains(m.Id));
+                break;
+
+            case "cancelled":
+                query = query.Where(m => m.CancelledAt != null);
+                break;
+
+            default:
+                // No filter → hide cancelled by default
+                query = query.Where(m => m.CancelledAt == null);
                 break;
         }
 
@@ -107,6 +116,36 @@ public class GetMembersQueryHandler : IRequestHandler<GetMembersQuery, MemberLis
             .Take(size)
             .ToListAsync(ct);
 
+        // Batch-load membership status for these members
+        var ids = items.Select(x => x.Id).ToList();
+        var membershipData = await _db.Memberships
+            .Where(x => ids.Contains(x.MemberId) && x.CancelledAt == null)
+            .GroupBy(x => x.MemberId)
+            .Select(g => new
+            {
+                MemberId = g.Key,
+                HasActive = g.Any(x => x.EndDate >= today)
+            })
+            .ToDictionaryAsync(x => x.MemberId, x => x);
+
+        var anyMembershipIds = await _db.Memberships
+            .Where(x => ids.Contains(x.MemberId))
+            .Select(x => x.MemberId)
+            .Distinct()
+            .ToListAsync(ct);
+
+        var anyMembershipSet = new HashSet<Guid>(anyMembershipIds);
+
+        string ComputeStatus(Domain.Entities.Member m)
+        {
+            if (m.CancelledAt.HasValue) return "CANCELLED";
+            if (!m.IsActive) return "INACTIVE";
+            if (membershipData.TryGetValue(m.Id, out var ms))
+                return ms.HasActive ? "ACTIVE" : "EXPIRED";
+            if (anyMembershipSet.Contains(m.Id)) return "EXPIRED";
+            return "NO_MEMBERSHIP";
+        }
+
         var dtos = items.Select(m => new MemberDto(
             m.Id, m.MemberCode, m.FullName, m.FatherFullName, m.Mobile, m.WhatsApp, m.Email,
             m.DateOfBirth, m.Gender, m.BloodGroup, m.MaritalStatus, m.Occupation,
@@ -114,9 +153,10 @@ public class GetMembersQueryHandler : IRequestHandler<GetMembersQuery, MemberLis
             m.IdProofType, m.IdProofNumber,
             m.EmergencyContactName, m.EmergencyContactRelation, m.EmergencyContactPhone,
             m.ReferredBy, m.Notes,
-            m.BranchId, m.Branch?.Name ?? "", "NO_MEMBERSHIP",
+            m.BranchId, m.Branch?.Name ?? "", ComputeStatus(m),
             m.PhotoBase64, m.PhotoContentType,
-            m.CreatedAt)).ToArray();
+            m.CreatedAt,
+            m.CancelledAt, m.CancelReason, m.CancelledByName)).ToArray();
 
         return new MemberListResult(dtos, total);
     }

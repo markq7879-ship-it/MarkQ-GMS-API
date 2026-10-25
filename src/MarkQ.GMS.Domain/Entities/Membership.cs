@@ -38,4 +38,8 @@ public class Membership : BaseEntity
 
     public DateOnly? PaymentDueDate { get; set; }
     public string? Notes { get; set; }
+
+    // WhatsApp auto-send tracking
+    public DateTime? ExpiryReminderSentAt { get; set; }
 }
+

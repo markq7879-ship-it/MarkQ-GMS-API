@@ -23,5 +23,8 @@ public class DashboardController : ControllerBase
     public async Task<ActionResult<RevenueTrendDto>> RevenueTrend(
         [FromQuery] int months = 6, CancellationToken ct = default)
         => Ok(await _mediator.Send(new GetRevenueTrendQuery(months), ct));
-}
 
+    [HttpGet("payment-methods")]
+    public async Task<ActionResult<PaymentMethodBreakdownResponse>> PaymentMethods(CancellationToken ct)
+        => Ok(await _mediator.Send(new GetPaymentMethodBreakdownQuery(), ct));
+}

@@ -1,8 +1,10 @@
 ﻿using MarkQ.GMS.Application.Features.Members;
+using MarkQ.GMS.Application.Features.Members.CancelMember;
 using MarkQ.GMS.Application.Features.Members.CheckMobile;
 using MarkQ.GMS.Application.Features.Members.CreateMember;
 using MarkQ.GMS.Application.Features.Members.GetMember;
 using MarkQ.GMS.Application.Features.Members.GetMembers;
+using MarkQ.GMS.Application.Features.Members.ReactivateMember;
 using MarkQ.GMS.Application.Features.Members.UpdateMember;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
@@ -64,8 +66,19 @@ public class MembersController : ControllerBase
             req.ReferredBy, req.Notes, req.BranchId, req.PhotoBase64, req.PhotoContentType), ct);
         return Ok(result);
     }
+
+    [HttpPost("{id:guid}/cancel")]
+    [Authorize(Roles = "OWNER,ADMIN")]
+    public async Task<ActionResult<MemberDto>> Cancel(Guid id, [FromBody] CancelMemberRequest req, CancellationToken ct)
+        => Ok(await _mediator.Send(new CancelMemberCommand(id, req.Reason), ct));
+
+    [HttpPost("{id:guid}/reactivate")]
+    [Authorize(Roles = "OWNER,ADMIN")]
+    public async Task<ActionResult<MemberDto>> Reactivate(Guid id, CancellationToken ct)
+        => Ok(await _mediator.Send(new ReactivateMemberCommand(id), ct));
 }
 
+public record CancelMemberRequest(string Reason);
 public record CreateMemberRequest(
     string FullName, string? FatherFullName, string Mobile, string? WhatsApp, string? Email,
     DateOnly? DateOfBirth, string? Gender, string? BloodGroup, string? MaritalStatus, string? Occupation,
@@ -74,7 +87,6 @@ public record CreateMemberRequest(
     string? EmergencyContactName, string? EmergencyContactRelation, string? EmergencyContactPhone,
     string? ReferredBy, string? Notes, Guid BranchId,
     string? PhotoBase64, string? PhotoContentType);
-
 public record UpdateMemberRequest(
     string FullName, string? FatherFullName, string Mobile, string? WhatsApp, string? Email,
     DateOnly? DateOfBirth, string? Gender, string? BloodGroup, string? MaritalStatus, string? Occupation,
@@ -83,4 +95,3 @@ public record UpdateMemberRequest(
     string? EmergencyContactName, string? EmergencyContactRelation, string? EmergencyContactPhone,
     string? ReferredBy, string? Notes, Guid BranchId,
     string? PhotoBase64, string? PhotoContentType);
-

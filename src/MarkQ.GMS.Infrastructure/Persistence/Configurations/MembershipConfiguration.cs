@@ -20,6 +20,8 @@ public class MembershipConfiguration : IEntityTypeConfiguration<Membership>
         b.Property(x => x.EndDateOverrideReason).HasMaxLength(500);
         b.Property(x => x.Notes).HasMaxLength(2000);
 
+        b.Property(x => x.ExpiryReminderSentAt);
+
         b.Property(x => x.PriceAtPurchase).HasColumnType("numeric(12,2)");
         b.Property(x => x.RegistrationFeeAtPurchase).HasColumnType("numeric(12,2)");
         b.Property(x => x.DiscountAtPurchase).HasColumnType("numeric(12,2)");
@@ -37,3 +39,4 @@ public class MembershipConfiguration : IEntityTypeConfiguration<Membership>
             .HasForeignKey(x => x.PlanId).OnDelete(DeleteBehavior.Restrict);
     }
 }
+
