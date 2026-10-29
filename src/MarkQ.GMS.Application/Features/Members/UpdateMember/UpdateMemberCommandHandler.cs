@@ -33,9 +33,20 @@ public class UpdateMemberCommandHandler : IRequestHandler<UpdateMemberCommand, M
         if (!_currentUser.IsOwner && !_currentUser.BranchIds.Contains(member.BranchId))
             throw new ForbiddenException("You do not have access to this member.");
 
-        var branch = await _db.Branches
-            .FirstOrDefaultAsync(b => b.Id == request.BranchId && b.OrganizationId == me.OrganizationId, ct)
-            ?? throw new NotFoundException("Branch not found.");
+        // Resolve branch: if empty, keep existing member's branch
+        Domain.Entities.Branch branch;
+        if (request.BranchId == Guid.Empty)
+        {
+            branch = await _db.Branches
+                .FirstOrDefaultAsync(b => b.Id == member.BranchId && b.OrganizationId == me.OrganizationId, ct)
+                ?? throw new ConflictException("Member's branch no longer exists.");
+        }
+        else
+        {
+            branch = await _db.Branches
+                .FirstOrDefaultAsync(b => b.Id == request.BranchId && b.OrganizationId == me.OrganizationId, ct)
+                ?? throw new NotFoundException("Branch not found.");
+        }
 
         if (!_currentUser.IsOwner && !_currentUser.BranchIds.Contains(branch.Id))
             throw new ForbiddenException("You do not have access to this branch.");
@@ -107,3 +118,4 @@ public class UpdateMemberCommandHandler : IRequestHandler<UpdateMemberCommand, M
     private static string NormalizeMobile(string mobile) =>
         new string(mobile.Where(c => char.IsDigit(c) || c == '+').ToArray());
 }
+

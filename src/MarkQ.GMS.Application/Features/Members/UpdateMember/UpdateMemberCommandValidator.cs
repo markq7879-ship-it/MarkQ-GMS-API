@@ -11,7 +11,7 @@ public class UpdateMemberCommandValidator : AbstractValidator<UpdateMemberComman
         RuleFor(x => x.Mobile).NotEmpty().MaximumLength(20)
             .Matches(@"^[0-9+\-() ]{6,20}$").WithMessage("Mobile number format is invalid.");
         RuleFor(x => x.Email).EmailAddress().When(x => !string.IsNullOrWhiteSpace(x.Email));
-        RuleFor(x => x.BranchId).NotEmpty();
+        // BranchId optional — handler keeps existing if empty
 
         RuleFor(x => x.DateOfBirth)
             .Must(d => !d.HasValue || d.Value <= DateOnly.FromDateTime(DateTime.UtcNow))
@@ -23,3 +23,4 @@ public class UpdateMemberCommandValidator : AbstractValidator<UpdateMemberComman
             .When(x => !string.IsNullOrWhiteSpace(x.PhotoContentType));
     }
 }
+
