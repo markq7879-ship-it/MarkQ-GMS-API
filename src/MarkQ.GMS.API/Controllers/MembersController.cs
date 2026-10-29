@@ -2,6 +2,7 @@
 using MarkQ.GMS.Application.Features.Members.CancelMember;
 using MarkQ.GMS.Application.Features.Members.CheckMobile;
 using MarkQ.GMS.Application.Features.Members.CreateMember;
+using MarkQ.GMS.Application.Features.Members.DeleteMember;
 using MarkQ.GMS.Application.Features.Members.GetMember;
 using MarkQ.GMS.Application.Features.Members.GetMembers;
 using MarkQ.GMS.Application.Features.Members.ReactivateMember;
@@ -78,6 +79,15 @@ public class MembersController : ControllerBase
         => Ok(await _mediator.Send(new ReactivateMemberCommand(id), ct));
 }
 
+    [HttpDelete("{id:guid}")]
+    [Authorize(Roles = "OWNER")]
+    public async Task<IActionResult> Delete(Guid id, CancellationToken ct)
+    {
+        await _mediator.Send(new DeleteMemberCommand(id), ct);
+        return NoContent();
+    }
+}
+
 public record CancelMemberRequest(string Reason);
 public record CreateMemberRequest(
     string FullName, string? FatherFullName, string Mobile, string? WhatsApp, string? Email,
@@ -95,3 +105,4 @@ public record UpdateMemberRequest(
     string? EmergencyContactName, string? EmergencyContactRelation, string? EmergencyContactPhone,
     string? ReferredBy, string? Notes, Guid BranchId,
     string? PhotoBase64, string? PhotoContentType);
+
