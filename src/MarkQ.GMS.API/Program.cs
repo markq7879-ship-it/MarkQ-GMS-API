@@ -38,9 +38,11 @@ builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 
 const string DevCors = "DevCors";
 builder.Services.AddCors(o => o.AddPolicy(DevCors, p => p
-    .WithOrigins(
-        "http://localhost:5173",
-        "https://markqgms.netlify.app")
+    .SetIsOriginAllowed(origin =>
+        origin == "http://localhost:5173" ||
+        origin == "https://markqgms.netlify.app" ||
+        origin.EndsWith("--markqgms.netlify.app")     // deploy preview URLs
+    )
     .AllowAnyHeader()
     .AllowAnyMethod()));
 
