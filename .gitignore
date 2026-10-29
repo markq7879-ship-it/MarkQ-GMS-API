@@ -36,7 +36,19 @@ logs/
 Thumbs.db
 
 # Frontend is deployed separately on Netlify
-/markq-gms-web/
 
 # Temporary backup files
 *.cors-backup
+# ============================================
+# Frontend (markq-gms-web) — track source, ignore build artifacts
+# ============================================
+markq-gms-web/node_modules/
+markq-gms-web/dist/
+markq-gms-web/.env.local
+markq-gms-web/.env.*.local
+markq-gms-web/.vite/
+
+
+# Never commit build output
+dist/
+markq-gms-web/dist/
