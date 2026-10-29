@@ -1,13 +1,13 @@
 ﻿import { useState, useEffect } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useNavigate } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   ArrowLeft, Pencil, MessageCircle, Printer, User as UserIcon,
   Phone, Mail, MapPin, Droplet, Heart, Calendar,
   Users as UsersIcon, AlertTriangle, CheckCircle2, XCircle, Clock,
-  Package, FileBadge,
+  Package, FileBadge, Trash2,  
 } from "lucide-react";
-import { getMember, updateMember, cancelMember, reactivateMember } from "./api";
+import { getMember, updateMember, cancelMember, reactivateMember, deleteMember } from "./api";
 import { listMemberships } from "../memberships/api";
 import { listPayments } from "../payments/api";
 import { listBranches } from "../branches/api";
@@ -98,10 +98,13 @@ function printIdCard(member: Member, activeMembership: any) {
 
 export default function MemberProfilePage() {
   const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
   const qc = useQueryClient();
   const [editOpen, setEditOpen] = useState(false);
   const [photoOpen, setPhotoOpen] = useState(false);
   const [cancelOpen, setCancelOpen] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
   const [cancelError, setCancelError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -173,6 +176,19 @@ export default function MemberProfilePage() {
     },
   });
 
+  const deleteMut = useMutation({
+    mutationFn: () => deleteMember(id!),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["members"] });
+      qc.invalidateQueries({ queryKey: ["dashboard-stats"] });
+      setDeleteOpen(false);
+      navigate("/members");
+    },
+    onError: (e: any) => {
+      setDeleteError(e?.response?.data?.detail ?? "Failed to delete member.");
+    },
+  });
+
   if (isLoading) {
     return <div className="py-16 text-center text-slate-500 font-bold">Loading profile…</div>;
   }
@@ -231,6 +247,17 @@ export default function MemberProfilePage() {
               className="inline-flex items-center gap-1.5 px-3 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-md font-bold"
             >
               <XCircle className="w-4 h-4" /> Cancel Member
+            </button>
+          )}
+
+          {/* Delete button — only when member has no activity */}
+          {!isCancelled && memberships.length === 0 && payments.length === 0 && (
+            <button
+              onClick={() => { setDeleteError(null); setDeleteOpen(true); }}
+              className="inline-flex items-center gap-1.5 px-3 py-2 bg-slate-700 hover:bg-slate-800 text-white rounded-md font-bold"
+              title="Permanently delete this member (no memberships or payments)"
+            >
+              <Trash2 className="w-4 h-4" /> Delete
             </button>
           )}
 
@@ -596,4 +623,7 @@ function MembershipStatusBadge({ status }: { status: string }) {
     : "bg-rose-50 text-rose-700 border-rose-200";
   return <span className={`inline-flex px-2 py-0.5 rounded-full font-bold text-xs border ${styles}`}>{status}</span>;
 }
+
+
+
 
