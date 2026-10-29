@@ -54,4 +54,6 @@ export async function reactivateMember(id: string): Promise<Member> {
   const { data } = await apiClient.post<Member>(`/members/${id}/reactivate`);
   return data;
 }
-
+export async function deleteMember(id: string): Promise<void> {
+  await apiClient.delete(`/members/${id}`);
+}
