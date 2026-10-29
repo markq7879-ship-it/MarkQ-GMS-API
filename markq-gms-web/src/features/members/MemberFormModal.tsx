@@ -13,6 +13,7 @@ const todayStr = new Date().toISOString().slice(0, 10);
 
 const schema = z.object({
   fullName: z.string().min(2, "Name is required").max(200),
+  fatherFullName: z.string().max(200).optional().or(z.literal("")),
   mobile: z.string().min(6, "Mobile is required").max(20),
   whatsapp: z.string().max(20).optional().or(z.literal("")),
   email: z.string().email("Invalid email").optional().or(z.literal("")),
@@ -391,3 +392,4 @@ export default function MemberFormModal({ open, member, branches, onClose, onSub
     </Modal>
   );
 }
+
