@@ -13,7 +13,6 @@ const todayStr = new Date().toISOString().slice(0, 10);
 
 const schema = z.object({
   fullName: z.string().min(2, "Name is required").max(200),
-  fatherFullName: z.string().max(200).optional().or(z.literal("")),
   mobile: z.string().min(6, "Mobile is required").max(20),
   whatsapp: z.string().max(20).optional().or(z.literal("")),
   email: z.string().email("Invalid email").optional().or(z.literal("")),
@@ -22,21 +21,21 @@ const schema = z.object({
     .optional()
     .or(z.literal(""))
     .refine((v) => !v || v <= todayStr, "Date of birth cannot be in the future"),
-  gender: z.enum(["MALE", "FEMALE", "OTHER"]).optional(),
-  bloodGroup: z.enum(["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-", "UNKNOWN"]).optional(),
-  maritalStatus: z.enum(["SINGLE", "MARRIED", "DIVORCED", "WIDOWED", "OTHER"]).optional(),
+  gender: z.enum(["MALE", "FEMALE", "OTHER"]).optional().or(z.literal("")),
+  bloodGroup: z.enum(["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-", "UNKNOWN"]).optional().or(z.literal("")),
+  maritalStatus: z.enum(["SINGLE", "MARRIED", "DIVORCED", "WIDOWED", "OTHER"]).optional().or(z.literal("")),
   occupation: z.string().max(100).optional().or(z.literal("")),
   address: z.string().max(500).optional().or(z.literal("")),
   city: z.string().max(100).optional().or(z.literal("")),
   pincode: z.string().max(20).optional().or(z.literal("")),
-  idProofType: z.enum(["AADHAR", "PAN", "PASSPORT", "DRIVING_LICENSE", "VOTER_ID", "OTHER"]).optional(),
+  idProofType: z.enum(["AADHAR", "PAN", "PASSPORT", "DRIVING_LICENSE", "VOTER_ID", "OTHER"]).optional().or(z.literal("")),
   idProofNumber: z.string().max(50).optional().or(z.literal("")),
   emergencyContactName: z.string().max(200).optional().or(z.literal("")),
   emergencyContactRelation: z.string().max(50).optional().or(z.literal("")),
   emergencyContactPhone: z.string().max(20).optional().or(z.literal("")),
   referredBy: z.string().max(200).optional().or(z.literal("")),
   notes: z.string().max(2000).optional().or(z.literal("")),
-  branchId: z.string().uuid("Select a branch"),
+  branchId: z.string().optional().or(z.literal("")),
 });
 type Values = z.infer<typeof schema>;
 
@@ -62,6 +61,10 @@ export default function MemberFormModal({ open, member, branches, onClose, onSub
   const mobileValue = watch("mobile");
 
   useEffect(() => {
+    // Prefer: member's branch → first active branch → empty (backend will auto-assign)
+    const defaultBranchId =
+      member?.branchId ?? branches.find((b) => b.isActive)?.id ?? branches[0]?.id ?? "";
+
     reset({
       fullName: member?.fullName ?? "",
       fatherFullName: member?.fatherFullName ?? "",
@@ -83,7 +86,7 @@ export default function MemberFormModal({ open, member, branches, onClose, onSub
       emergencyContactPhone: member?.emergencyContactPhone ?? "",
       referredBy: member?.referredBy ?? "",
       notes: member?.notes ?? "",
-      branchId: member?.branchId ?? branches[0]?.id ?? "",
+      branchId: defaultBranchId,
     });
     setPhoto(
       member?.photoBase64
@@ -94,12 +97,10 @@ export default function MemberFormModal({ open, member, branches, onClose, onSub
     setDupWarning(null);
   }, [member, branches, reset]);
 
-  // Same-as-mobile sync
   useEffect(() => {
     if (sameAsMobile) setValue("whatsapp", mobileValue);
   }, [sameAsMobile, mobileValue, setValue]);
 
-  // Duplicate mobile check on blur
   useEffect(() => {
     if (!open || !mobileValue || mobileValue.length < 6) {
       setDupWarning(null);
@@ -118,7 +119,26 @@ export default function MemberFormModal({ open, member, branches, onClose, onSub
 
   async function handleFormSubmit(v: Values) {
     await onSubmit({
-      ...v,
+      fullName: v.fullName.trim(),
+      mobile: v.mobile.trim(),
+      whatsapp: v.whatsapp || undefined,
+      email: v.email || undefined,
+      dateOfBirth: v.dateOfBirth || undefined,
+      gender: (v.gender || undefined) as any,
+      bloodGroup: (v.bloodGroup || undefined) as any,
+      maritalStatus: (v.maritalStatus || undefined) as any,
+      occupation: v.occupation || undefined,
+      address: v.address || undefined,
+      city: v.city || undefined,
+      pincode: v.pincode || undefined,
+      idProofType: (v.idProofType || undefined) as any,
+      idProofNumber: v.idProofNumber || undefined,
+      emergencyContactName: v.emergencyContactName || undefined,
+      emergencyContactRelation: v.emergencyContactRelation || undefined,
+      emergencyContactPhone: v.emergencyContactPhone || undefined,
+      referredBy: v.referredBy || undefined,
+      notes: v.notes || undefined,
+      branchId: v.branchId || "",
       photoBase64: photo?.base64,
       photoContentType: photo?.contentType,
     });
@@ -345,15 +365,15 @@ export default function MemberFormModal({ open, member, branches, onClose, onSub
           </legend>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="text-sm font-medium text-slate-700">Branch *</label>
+              <label className="text-sm font-medium text-slate-700">Branch</label>
               <select {...register("branchId")}
                 className="mt-1 w-full border border-slate-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                <option value="">Select branch</option>
-                {branches.map((b) => (
+                <option value="">Auto-assign to first branch</option>
+                {branches.filter((b) => b.isActive).map((b) => (
                   <option key={b.id} value={b.id}>{b.code} · {b.name}</option>
                 ))}
               </select>
-              {errors.branchId && <p className="text-xs text-red-600 mt-1">{errors.branchId.message}</p>}
+              <p className="text-xs text-slate-500 mt-1">If left empty, member will be assigned to the first active branch.</p>
             </div>
             <div>
               <label className="text-sm font-medium text-slate-700">Referred By</label>
